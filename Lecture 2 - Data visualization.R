@@ -43,7 +43,7 @@ movies
 # Also, you can check the data in a scrollable way in the upper right corner, when clicking on the "movies" text. Btw, this is the same as typing `View(movies)` in the consol (mind the capital V).
 
 head(movies) # This shows the first 5 rows of the dataset
-library(ggplo2)
+library(ggplot2)
 # So, how much the audience and critics score agree?
 ggplot(data = movies) + # Call the plotting, define the dataset # Elements can be added to a plot using `+`
     aes(x = audience_score, y = critics_score) + # Define aesthetics, that have a variable value
@@ -175,12 +175,6 @@ ggplot(data = movies) +
     aes(x = thtr_rel_year, y = imdb_num_votes) +
     geom_smooth(method = "lm", se = FALSE)
 
-# Hexplot clusters the data and and shows thedensity data points as color gradient
-ggplot(data = movies) +
-    aes(x = critics_score, y = audience_score) +
-    geom_hex()
-
-
 ### Position
 # Make a stacked bar chart that shows absolute counts
 ggplot(data = movies) +
@@ -215,13 +209,6 @@ ggplot(data = movies) +
     geom_bar(position = "fill") +
     coord_polar()
 
-# Mapping (only briefly)
-world_map <- map_data("world") # Load map data
-
-ggplot(dplyr::mutate(world_map, country = ifelse(region == "Hungary", "Hungary", "Not Hungary"))) + # This is a bit more advanced stuff that we will cover next class, don't worry
-    aes(long, lat, group = group, fill = country) +
-    geom_polygon()
-
 ### Themes
 # There are several themes other than the default
 # Try adding these to any plot!
@@ -245,10 +232,12 @@ ggplot(data = movies) +
 
 # You can set the scale for several aesthetics, such as fill or color
 ggplot(data = movies) +
-    aes(x = genre, y = thtr_rel_month) +
-    geom_point(size = 3) +
-    coord_flip()
-
+    aes(x = genre, group = critics_rating, fill = critics_rating) +
+    geom_bar(position = "fill") +
+    coord_polar() +
+    scale_fill_brewer(palette = "YlOrRd")
+    
+    
 ### Save your plot
 # Put your plot into a variable ( <- ), than 
 # ggsave(<VARIABLE NAME>, "<FILENAME>")
