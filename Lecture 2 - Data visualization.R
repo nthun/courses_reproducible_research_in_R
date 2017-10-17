@@ -23,6 +23,8 @@ scale(x, center = TRUE, scale = FALSE) # Only centers
 scale(x, center = FALSE, scale = T) # Only scales (mind that you can abbreviate TRUE to T, but this is case sensitive!)
 
 ### Data visualization
+# Install ggplot2 using
+install.packages("ggplot2")
 library(ggplot2) # Load the package that we will use for visualization
 
 # Load the movie data from the internet
