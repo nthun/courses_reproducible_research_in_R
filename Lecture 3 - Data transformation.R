@@ -59,11 +59,7 @@ library(haven)
 read_spss("datasets/movies.sav")
 
 
-
-
-
-
-
+### THE PIPE OPERATOR
 # Let's try the pipe operator
 # The pipe is in several packages, for e.g. the magrittr package
 library(magrittr)
