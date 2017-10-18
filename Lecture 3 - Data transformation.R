@@ -1,4 +1,4 @@
-### Lecture 3
+### Lecture 3 and 4
 # Install the tidyverse package. All the packages that we will use today are included in it
 install.packages("tidyverse")
 
@@ -161,7 +161,13 @@ solution_2 %>%
         scale_y_continuous()
     
 
-# Tidy data
+### Data types
+
+TBA!
+
+
+
+### Cleaning datasets
 library(tidyr)
 
 # We will use the who data from the tidyr package
