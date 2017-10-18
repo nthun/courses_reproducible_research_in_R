@@ -9,6 +9,7 @@ install.packages("tidyverse")
 
 # R has its own data format (.RData), that stores variables from R. You can load an R object using the load() function.
 # Usually, it is enough to provide the file name (with the relative or absolute path), but import functions often has optional parameters
+library(tidyverse)
 
 load("datasets/movies.RData")
 
@@ -19,7 +20,7 @@ save(x, file = "datasets/fruits.RData")
 
 # For reading common file formats, we will use the readr package (from tidyverse)
 
-library(reader)
+library(readr)
 
 # A very common file format in the data analysis community is .csv. It means comma separated values, which is a quite literal description. It is a simple text file, but commas distinguish variables and values from each other. You can import a csv file using
 
@@ -74,9 +75,10 @@ x %>%
     divide_by(3) %>%
     sd()
 
+
 # [1] 46.02999
 # Let's load the dplyr package, which is for data transformation in data frames
-library(dplyr) 
+library(dplyr)
 
 # Let's use the ToothGrowth data once again, and practice with the pipe opeartor
 # Filter the rows that 
@@ -132,7 +134,7 @@ gapminder <- gapminder::gapminder
 # Task 1 solution
 solution_1 <-
     gapminder %>% 
-    filter(year %in% c(1952, 1957)) %>%
+    filter(year %in% c(1952, 1957, 1962)) %>%
     group_by(continent) %>% 
     summarise(life_exp_med = median(lifeExp)) %>% 
     arrange(-life_exp_med)
@@ -160,16 +162,15 @@ solution_2 %>%
         geom_hline(yintercept = 0) +
         scale_y_continuous()
     
-
 ### Data types
-
-TBA!
-
-
+# R has so called atomic data types
+# Numeric data is either integer (round numbers > 0), or numbers with decimals
+    
+# SEE SLIDES
 
 ### Cleaning datasets
 library(tidyr)
-
+library(tibble)
 # We will use the who data from the tidyr package
 # Check the codebook
 data(who)
