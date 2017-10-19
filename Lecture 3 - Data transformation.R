@@ -5,7 +5,9 @@ install.packages("tidyverse")
 
 # Data importing
 # The easies way is to use data import from the "Files" window
-# IMPORTANT!! IN ORDER TO USE THIS CODE, YOU ALSO HAve TO DOWNLOAD THE DATAFILES FROM THE COURSE'S PAGE, THAT YOU CAN FIND IN THE DATASETS LIBRARY!
+
+
+# IMPORTANT!! IN ORDER TO USE THIS CODE, YOU ALSO HAVE TO DOWNLOAD THE DATAFILES FROM THE COURSE'S PAGE, THAT YOU CAN FIND IN THE DATASETS LIBRARY! https://osf.io/xcvn7/
 
 # R has its own data format (.RData), that stores variables from R. You can load an R object using the load() function.
 # Usually, it is enough to provide the file name (with the relative or absolute path), but import functions often has optional parameters
@@ -129,7 +131,7 @@ gapminder <- gapminder::gapminder
 
 # Gapminder contains the data of several countries at tifferent times.
 # It is in tidy format. Check the codebook
-?gapminder::gapminder
+?gapminder
 
 # Task 1 solution
 solution_1 <-
@@ -145,7 +147,6 @@ solution_1 %>%
     ggplot() +
         aes(x = continent, y = life_exp_med) +
         geom_col()
-
 
 # Task 2 solution
 solution_2 <-
@@ -175,6 +176,7 @@ library(tibble)
 # Check the codebook
 data(who)
 ?who
+
 # gather arranges data to long format
 # you have to give a name that will store
 
@@ -195,7 +197,6 @@ library(stringr)
 
 who_long %>% 
     mutate(variable = str_replace(variable, "new_",""))
-    
 
 # This way, the variable contains 3 different information: test result, gender, and age
 # Let's separate the test result first
@@ -219,9 +220,3 @@ who_tidy %>%
 # We can also transform the data to wide format, for e.g. the age groups. 
 who_tidy %>% 
     spread(age, value)
-
-
-    
-    
-    
-    
