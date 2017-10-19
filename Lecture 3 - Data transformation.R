@@ -28,7 +28,7 @@ library(readr)
 
 read_csv("datasets/movies.csv")
 
-# Note that ss we did not assign the result of the function to a variable, it is not stored. So let's try
+# Note that as we did not assign the result of the function to a variable, it is not stored. So let's try
 
 m1 <- read_csv("datasets/movies.csv")
 
@@ -124,7 +124,6 @@ ToothGrowth %>%
 tooth_results %>% 
     arrange(mean_len_cm)
 
-
 # Practice on the gapminder data. First install it, than load the data 
 install.packages("gapminder")
 gapminder <- gapminder::gapminder
@@ -164,10 +163,7 @@ solution_2 %>%
         scale_y_continuous()
     
 ### Data types
-# R has so called atomic data types
-# Numeric data is either integer (round numbers > 0), or numbers with decimals
-    
-# SEE SLIDES
+# SEE SLIDES!
 
 ### Cleaning datasets
 library(tidyr)
