@@ -61,6 +61,53 @@ titanic_train %>%
     select(Age, age_group) # Check if results are ok
 
 
+# Variants of mutate can change several variables in the same time. They can be used with or without grouping
+titanic_train %>% 
+    mutate_all(.funs = funs(as.character(.)))
+
+# mutate_at() applies a function to all variables
+titanic_train %>% 
+    mutate_at(.funs = funs(as.factor(.)), .vars = vars(Sex, Embarked))
+
+# mutate_if() applies a function to all variables that fulfill a the predicament
+
+titanic_train %>% 
+    mutate_if(.predicate = is.character, .funs = funs(stringr::str_to_lower(.)))
+
+# Let's see how this works when you make a calculation.
+# Note that without defining groups, the variables will be overwritten with summary stats, like in the next example. 
+
+titanic_train %>% 
+    mutate_if(.predicate = is.integer, .funs = funs(mean(.))) 
+
+# If you define groups, the stats will refer to the groups
+# You can also give a name to the new variable in fun(), that will become a postfix.
+# Note that the predicate don't have the () after the function name
+
+titanic_train %>% 
+    group_by(Sex) %>% 
+    mutate_if(.predicate = is.integer, .funs = funs(mean = mean(.))) 
+
+# Summarise functions  
+# Can be used when you have too many variables and you don't want to list them all. You will get the results in "wide format". You can define groups too, so it is easy to make data summaries
+
+# summarise_all() creates a separate summary for all variables. Moreover, you can execute several functions at the same time, that will be (without further naming) postfixes. But you can also name them similarly to the example for mutate_if().
+titanic_train %>% 
+    select(Sex, PassengerId:Pclass) %>% 
+    group_by(Sex) %>%     
+    summarise_all(.funs = funs(mean(.), sd(.), n()))
+
+# summarise_at()
+# Note that the function parameters (such as na.rm = T) can be passed to the functions from outside of the funs(), if you want all functions to take it as a paramater. Of course, you can define the parameter for all functions separately e.g. funs(mean(., na.rm = TRUE), sd(., na.rm = TRUE))
+titanic_train %>% 
+    group_by(Sex, Embarked) %>% 
+    summarise_at(.funs = funs(mean(.), sd(.)), na.rm = TRUE, .vars = vars(Age, Fare))
+
+# summarise_if summarises variables that fullfill a predicament. 
+titanic_train %>% 
+    group_by(Embarked) %>%
+    summarise_if(.predicate = is.integer, .funs = funs(mean_t2 = mean(., na.rm = T)*2))
+
 ### PRACTICE ON TITANIC DATA
 # Solution for Titanic question 2
 titanic_train %>% 
