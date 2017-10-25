@@ -61,7 +61,55 @@ titanic_train %>%
     select(Age, age_group) # Check if results are ok
 
 
-# Variants of mutate can change several variables in the same time. They can be used with or without grouping
+# Conditional statements if()
+
+x <- 5
+
+if(x <= 4) {print("smaller or equal than 4")}
+if(x>4){print("larger than 4")}
+
+# This can be useful for e.g. to create a directory only when it does not exist
+if(dir.exists("test_dir") == FALSE) dir.create("test_dir")
+
+# for() is used to iterate over indexes, for e.g. when you want to create and write several plots 
+
+for (i in 1:10) print(i)
+
+
+# You have to setup the variable that will contain the results if you want to store values
+plots <- list()
+
+# Then you run the iteration, where you can refer to the index variable
+# Let's make separate plots
+for (i in unique(titanic_train$Embarked)){
+plots[[i]] <-
+    titanic_train %>% 
+    filter(Embarked == i) %>%
+    ggplot() +
+    aes(x = Age, y = SibSp + Parch) +
+    geom_point()
+}
+
+# We have a list object, with 4 different plots
+# The names of the list elements are the same as the unique values of the Embark variable in titanic_train
+plots %>% names()
+
+# We got 4 separate plots
+plots[[1]]
+plots[[2]]
+plots[[3]]
+plots[[4]]
+
+# We can also refer to them by name (mind the quote)
+plots[["Q"]]
+
+# Let's write these plots to 4 separate files to the test_dir subdirectory
+
+for (i in seq_along(plots)){
+    ggsave(plot = plots[[i]], filename = paste0("test_dir/plot_",i,".jpg"))
+}
+
+### Variants of mutate can change several variables in the same time. They can be used with or without grouping
 titanic_train %>% 
     mutate_all(.funs = funs(as.character(.)))
 
@@ -103,7 +151,7 @@ titanic_train %>%
     group_by(Sex, Embarked) %>% 
     summarise_at(.funs = funs(mean(.), sd(.)), na.rm = TRUE, .vars = vars(Age, Fare))
 
-# summarise_if summarises variables that fullfill a predicament. 
+# summarise_if summarises variables that fulfill a predicament. 
 titanic_train %>% 
     group_by(Embarked) %>%
     summarise_if(.predicate = is.integer, .funs = funs(mean_t2 = mean(., na.rm = T)*2))
