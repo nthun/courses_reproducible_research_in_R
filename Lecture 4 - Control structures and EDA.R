@@ -1,4 +1,4 @@
-# Lecture 5 - Select helpers, and exercises
+# Lecture 5 - Select helpers, control flow, and EDA
 library(tidyverse)
 
 # Let's use the titanic dataset
@@ -14,7 +14,7 @@ titanic_train %>%
 
 ### Selecting variables from a dataset
 # Check names
-titanic_train %>% names
+titanic_train %>% names()
 # Transform to tibble to be able to see a more compact dataset on the console
 titanic_train <- titanic_train %>% as_tibble()
 
@@ -59,55 +59,6 @@ titanic_train %>%
                                  Age >= 64 ~ "63+",
                                  TRUE ~ NA_character_)) %>% 
     select(Age, age_group) # Check if results are ok
-
-
-# Conditional statements if()
-
-x <- 5
-
-if(x <= 4) {print("smaller or equal than 4")}
-if(x>4){print("larger than 4")}
-
-# This can be useful for e.g. to create a directory only when it does not exist
-if(dir.exists("test_dir") == FALSE) dir.create("test_dir")
-
-# for() is used to iterate over indexes, for e.g. when you want to create and write several plots 
-
-for (i in 1:10) print(i)
-
-
-# You have to setup the variable that will contain the results if you want to store values
-plots <- list()
-
-# Then you run the iteration, where you can refer to the index variable
-# Let's make separate plots
-for (i in unique(titanic_train$Embarked)){
-plots[[i]] <-
-    titanic_train %>% 
-    filter(Embarked == i) %>%
-    ggplot() +
-    aes(x = Age, y = SibSp + Parch) +
-    geom_point()
-}
-
-# We have a list object, with 4 different plots
-# The names of the list elements are the same as the unique values of the Embark variable in titanic_train
-plots %>% names()
-
-# We got 4 separate plots
-plots[[1]]
-plots[[2]]
-plots[[3]]
-plots[[4]]
-
-# We can also refer to them by name (mind the quote)
-plots[["Q"]]
-
-# Let's write these plots to 4 separate files to the test_dir subdirectory
-
-for (i in seq_along(plots)){
-    ggsave(plot = plots[[i]], filename = paste0("test_dir/plot_",i,".jpg"))
-}
 
 ### Variants of mutate can change several variables in the same time. They can be used with or without grouping
 titanic_train %>% 
@@ -175,6 +126,154 @@ titanic_df <-
     group_by(Pclass) %>% 
     mutate(med_price = median(Fare)) %>% 
     ungroup()
+
+
+### Control structures
+# Conditional statement if()
+# You can use this to execute functions only if certain 
+
+x <- 5
+
+if(x <= 4) {print("smaller or equal than 4")}
+if(x>4){
+    print("larger than 4")
+    x/2
+    }
+
+# This can be useful for e.g. to create a directory only when it does not exist
+if(dir.exists("test_dir") == FALSE) dir.create("test_dir")
+
+## Iteration
+# for() is used to iterate over indexes, for e.g. when you want to create and write several plots 
+for (i in 1:10) print(i)
+
+# You have to setup the variable that will contain the results if you want to store values
+plots <- list()
+
+# Then you run the iteration, where you can refer to the index variable
+# Let's make separate plots
+for (i in unique(titanic_train$Embarked)){
+plots[[i]] <-
+    titanic_train %>% 
+    filter(Embarked == i) %>%
+    ggplot() +
+    aes(x = Age, y = SibSp + Parch) +
+    geom_point()
+}
+
+### LISTS
+# We have a list object, with 4 different plots
+# The names of the list elements are the same as the unique values of the Embark variable in titanic_train
+plots %>% names()
+
+# We got 4 separate plots, that you can see by typing the element name.
+plots[1]
+plots[2]
+plots[3]
+plots[[4]]
+
+# We can also refer to them by name, if the list is named (mind the quote)
+plots[["Q"]]
+
+a <- list(a = 1:3, b = "a string", c = pi, d = list(-1, -5))
+
+# Indexing a list can be a bit difficult first. There are 3 ways of subsetting a list
+# [ returns a sub-list. The result will always be a list
+a[1:2] %>% str()
+
+# [[ returns a single component of a list. It removes the level of hierarchy
+a[[1]] %>% str()
+a[[4]] %>% str() # This remains a list, because this was a list in a list
+
+# You can use $ as a shorthand for extracting named elements
+a$a
+# is the same as
+a[["a"]]
+
+# Let's write these plots to 4 separate files to the test_dir subdirectory
+
+for (i in seq_along(plots)){
+    ggsave(plot = plots[[i]], filename = paste0("test_dir/plot_",i,".jpg"))
+}
+
+### Exploratory data analysis
+# To examine the distribution of a categorical variable, use a bar chart
+?diamonds
+
+ggplot(data = diamonds) +
+    geom_bar(mapping = aes(x = cut))
+
+# See the number of observations grouped by the cut variable
+diamonds %>% 
+    count(cut)
+
+# To examine the distribution of a continuous variable, use a histogram
+ggplot(data = diamonds) +
+    geom_histogram(mapping = aes(x = carat), binwidth = 0.5)
+
+# Typical values
+summary(diamonds$carat)
+ggplot(diamonds) +
+    geom_density(aes(x = carat), fill = "red")
+
+# Unusual values
+ggplot(diamonds) + 
+    geom_histogram(mapping = aes(x = y), binwidth = 0.5)
+
+# To make it easy to see the unusual values, we need to zoom to small values of the y-axis with coord_cartesian()
+ggplot(diamonds) + 
+    geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+    coord_cartesian(ylim = c(0, 50))
+
+unusual <- diamonds %>% 
+    filter(y < 3 | y > 20) %>% 
+    select(price, x, y, z) %>%
+    arrange(y)
+unusual
+
+# Instead of excluding the variables entirely, let's just make the outlier values NA
+diamonds2 <- diamonds %>% 
+    mutate(y = if_else(y < 3 | y > 20, NA_real_, y))
+
+# Missing values will be always shown as a warning
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + 
+    geom_point()
+
+### COVARIATION
+ggplot(data = diamonds) + 
+    aes(x = price) +
+    geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+
+# Checking the covariation of a continuous and a categorical variable
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+    geom_boxplot()
+
+# To make a summary, will show the difference better. But important imformation may be lost
+ggplot(diamonds) + 
+    geom_bar(mapping = aes(x = cut))
+
+# The boxplot may show us more information
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+    geom_boxplot()
+
+# Two categorical variables
+# Comparing how color and cut covary, we can simply calculate the number of cases
+diamonds %>% 
+    count(color, cut)
+
+# Better to visualize
+diamonds %>% 
+    count(color, cut) %>%  
+    ggplot(mapping = aes(x = color, y = cut)) +
+    geom_tile(mapping = aes(fill = n))
+
+# Two continuous variables
+ggplot(data = diamonds) +
+    geom_point(mapping = aes(x = carat, y = price))
+
+# Or by binning the data
+ggplot(diamonds) +
+    geom_bin2d(mapping = aes(x = carat, y = price))
 
 
 
