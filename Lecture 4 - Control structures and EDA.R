@@ -112,7 +112,7 @@ titanic_train %>%
 titanic_train %>% 
     group_by(Pclass, Sex, Survived) %>% 
     ggplot() +
-    aes(x = Pclass %>% as.factor(), fill = Sex) +
+    aes(x = Pclass, fill = Sex) +
     geom_bar(position = "dodge") +
     facet_wrap(~Survived)
 
@@ -225,13 +225,17 @@ ggplot(diamonds) +
     geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
     coord_cartesian(ylim = c(0, 50))
 
-unusual <- diamonds %>% 
+# Let's save the unusual values that are smaller than 3 and larger than 20
+unusual <- 
+    diamonds %>% 
     filter(y < 3 | y > 20) %>% 
     select(price, x, y, z) %>%
     arrange(y)
+# Let's check the unusual values
 unusual
 
 # Instead of excluding the variables entirely, let's just make the outlier values NA
+# This way, you keep the other values of the observation, that may not be invalid. Also, you don't have to make note somewhere else that you actually had to remove cases. This information remains in your data.
 diamonds2 <- diamonds %>% 
     mutate(y = if_else(y < 3 | y > 20, NA_real_, y))
 
@@ -240,20 +244,35 @@ ggplot(data = diamonds2, mapping = aes(x = x, y = y)) +
     geom_point()
 
 ### COVARIATION
+# It is possible to see differing distributions in a continuous vaiable for separate categorical levels
+# To check  frequency distribution of price by cut, we can use frequency polygons (similar to histograms)
 ggplot(data = diamonds) + 
     aes(x = price) +
-    geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+    geom_freqpoly(mapping = aes(color = cut), binwidth = 500)
+
+# Or you can choose to use density plots, those show relative frequencies (but the purpose is similar)
+ggplot(data = diamonds) + 
+    aes(x = price, fill = cut, color = cut) +
+    geom_density(alpha = .3)
+
+# However, this does not look that great, so let's check out a visualization that shows distributions in a way that is is also readable. For this, we need the ggridges package
+install.packages("ggridges")
+library(ggridges)
+ggplot(diamonds) +
+    aes(x = price, y = cut) +
+    geom_density_ridges()
+
+# You can also use a violin plot (or bean plot) for the same thing
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+    geom_violin()
 
 # Checking the covariation of a continuous and a categorical variable
+# To check the typical values along with a distribution summary in a plot, use boxplot
 ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
     geom_boxplot()
 
-# To make a summary, will show the difference better. But important imformation may be lost
-ggplot(diamonds) + 
-    geom_bar(mapping = aes(x = cut))
-
-# The boxplot may show us more information
-ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+# We can also reorder values based on the median (central line in boxplot)
+ggplot(data = diamonds, mapping = aes(x = reorder(cut, price, FUN = median), y = price)) +
     geom_boxplot()
 
 # Two categorical variables
@@ -261,19 +280,30 @@ ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
 diamonds %>% 
     count(color, cut)
 
-# Better to visualize
+# But we are better off if we also visualize the results 
+# For e.g. we can use the count plot. This shows the number of cases by size of the dots
+ggplot(data = diamonds) +
+    geom_count(mapping = aes(x = cut, y = color))
+
+# We can also make a heatmap, where we visualize the frequency of cases as color density
+# In this example, darker colors mean less and brither colors mean more cases
 diamonds %>% 
     count(color, cut) %>%  
     ggplot(mapping = aes(x = color, y = cut)) +
     geom_tile(mapping = aes(fill = n))
 
 # Two continuous variables
+# The most obvious visualization is the simple scatter plot
 ggplot(data = diamonds) +
     geom_point(mapping = aes(x = carat, y = price))
 
-# Or by binning the data
+# Or by binning the data points that are close to each other
 ggplot(diamonds) +
     geom_bin2d(mapping = aes(x = carat, y = price))
+
+# You can also use hexagon bins instead of rectangles
+ggplot(diamonds) +
+    geom_hex(mapping = aes(x = carat, y = price))
 
 
 
