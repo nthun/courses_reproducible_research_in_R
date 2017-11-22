@@ -1,4 +1,4 @@
-# Lecture 6 - Linear regression
+# Lecture 5 - Regression
 # Load these packages
 library(tidyverse)
 library(broom)
@@ -52,7 +52,7 @@ summary(acid_lm_std)
 cor(cocktails$abv, cocktails$acid)
 
 ## Predicting values based on the model
-# Create data with new 
+# Create data with new values to predict
 newdata <- tibble(acid = c(0.2, 0.3, 0.4))
 # predict returns a vector of predictions
 predict(acid_lm, newdata)
@@ -91,7 +91,7 @@ cocktails %>%
     ggplot() +
     aes(y = abv, x = acid) +
     geom_hline(aes(yintercept = mean_abv), size = 1.5) +
-    geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "black") +
+    geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "yellow") +
     geom_segment(aes(xend = acid, yend = mean_abv, y = .fitted), linetype = "dashed", color = "purple", size = 1.2) +
     geom_point(size = 2)
 
@@ -143,16 +143,23 @@ cocktails %>%
 # Add multiple predictors: <outcome variable> ~ <predictor 1> + <predictor 2>
 lm1 <- lm(abv ~ acid + sugar, data = cocktails)
 summary(lm1)
+broom::tidy(lm1)
 # Add multiple predictors AND their interactions: <outcome variable> ~ <predictor 1> * <predictor 2>
 lm2 <- lm(abv ~ acid * sugar, data = cocktails)
 summary(lm2)
+broom::tidy(lm2)
 # Add ONLY the interaction of predictors: <outcome variable> ~ <predictor 1> : <predictor 2>
 lm3 <- lm(abv ~ acid : sugar, data = cocktails)
 summary(lm3)
+broom::tidy(lm3)
+
+# Get the confidence intervals for parameters
+confint(lm1, level = 0.95)
 # You can combine these
 # R can also deal with categorical variables, as they are automatically dummied, and the first level is taken as baseline
 lm(abv ~ acid : sugar + type, data = cocktails) %>% summary()
-# To change the baseline, convert it to random, and use the levels
+# To change the baseline, convert it to random, and use the levels to set the baseline to carbonated
+# Use the forcats::fct_relevel() function
 lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails) %>% summary()
 
 ## Model selection
@@ -166,14 +173,31 @@ glance(lm2)
 glance(lm3)
 
 # You can also compare the logLik models using the anova() function. It returns an F value, which is significant if difference.
-anova(lm1, lm2)
+anova(lm1, lm3)
 # This tells us that the more complicated model is not significantly better, so we should not use it
 
-# You can have more then 2 models, and the comparison refers to the previous model.
+# You can have more then 2 models, and the comparison refers to the _PREVIOUS_ model (so nomt the baseline)
 anova(lm1, lm2, lm3)
 
 # Based on the comparisons, there is no significant diffference. So we should choose the simplest model, that has the smallest df! It is model number 3!
 
+install.packages("stargazer")
+library(stargazer)
 
 
+stargazer(lm1, lm2, title="Results", align=TRUE, type = "text")
+
+results_table_html <-
+    stargazer(lm1,
+              lm2,
+              lm3,
+              title = "Model comparison",
+              dep.var.labels = "Alcohol content",
+              align = TRUE,
+              ci = TRUE,
+              df = TRUE,
+              # keep.summary.stat = c("aic","bic","ll","f","rsq","adj.rsq","n","res.dev","chi2"),
+              type = "html")
+
+write_lines(results_table_html, "results_table.html")
 

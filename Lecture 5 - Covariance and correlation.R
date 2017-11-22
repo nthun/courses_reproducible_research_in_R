@@ -1,4 +1,4 @@
-# Lecture 5 - Covariation, correlaion, joining
+# Lecture 7 - Covariation, correlaion, joining
 # Load these packages
 library(tidyverse)
 library(broom)
@@ -101,12 +101,24 @@ cocktails %>%
     summarise(r = cor(x = abv, y = value) %>% round(2),
               p = cor.test(x = abv, y = value, method = "pearson")$p.value)
 
+
 # To get significance of the values in the matrix, we should use the psych paclage. corr.test() returns correlations, sample size, and p-values. It can also correct the significance for multipe comparisions, and calculate confidence intervals. 
 if (!require(psych)) install.packages("psych")
 library(psych)
 cocktails %>% 
     select(abv:sugar) %>% 
     corr.test()
+
+# Moreover, it can also correct the significance for family-wise error, or return CI-s
+cocktails %>% 
+    select(abv:sugar) %>% 
+    corr.test(adjust = "bonferroni") %>% 
+    print(short = FALSE)
+
+# psych::cor.ci returns bootstrapped confidence intervals
+cocktails %>% 
+    select(abv:sugar) %>% 
+    cor.ci(method = "pearson", n.iter = 1000) # Specify number of iterations
 
 # Visualize correlation matrices. Best to use the GGally package.
 # By default, ggpairs() shows scatter plots (all variables by all variables), density plots, and the actual correlation values. You can also add several features, check: https://ggobi.github.io/ggally/
@@ -124,11 +136,44 @@ ggplot(x) + geom_histogram(aes(x))
 ggplot(x) + geom_density(aes(x), fill = "grey40")
 ggplot(x) + geom_qq(aes(sample = x))
 
+# Plot about different distributions
+distrib <- 
+    tibble( normal = rnorm(4000, 100, 15),
+            poisson = rpois(4000, 8),
+            uniform = runif(4000, 0, 100),
+            exponential = rexp(4000, 2),
+            log_normal = rlnorm(4000, 0, 1),
+            chi_square = rchisq(4000, 10, ncp = 0)) %>% 
+    gather(distrib, value)
+
+# Histogram
+distrib %>% 
+    ggplot() +
+    aes(value) +
+    geom_histogram(bins = 15) +
+    facet_wrap(~distrib, scales = "free")
+
+# Density
+distrib %>% 
+    ggplot() +
+    aes(value) +
+    geom_density(fill = "grey50") +
+    facet_wrap(~distrib, scales = "free")
+
+# qq plot
+distrib %>% 
+    ggplot() +
+    aes(sample = value) +
+    geom_qq_line(linetype = "dashed", color = "red") +
+    geom_qq() +
+    facet_wrap(~distrib, scales = "free")
+
 # Transform the data
 cocktails_trans <- 
     cocktails %>% 
     mutate(abv = abv %>% log())
 
+# Check normality plots
 ggplot(cocktails_trans) + geom_histogram(aes(x = abv), bins = 20)
 ggplot(cocktails_trans) + geom_density(aes(x = abv), fill = "grey40")
 ggplot(cocktails_trans) + geom_qq(aes(sample = abv))
@@ -136,10 +181,6 @@ ggplot(cocktails_trans) + geom_qq(aes(sample = abv))
 cocktails %>% 
     pull(abv) %>% 
     shapiro.test()
-
-cocktails %>% 
-    select(abv:sugar) %>% 
-    cor.ci()
 
 # Do it on the tidyverse way
 # Use do if you don't want to cram your results into one predefined variable. This way, you will get a nested dataframe
@@ -157,13 +198,6 @@ cocktails %>%
     group_by(key) %>% 
     do(sw = shapiro.test(.$value) %>% tidy()) %>% 
     unnest(sw)
-
-cor.test(cocktails$abv, cocktails$sugar, method = "spearman")
-
-cocktails %>% 
-    select(abv:sugar) %>% 
-    cor.ci(method = "spearman", n.iter = 1000) # Specify number of iterations
-
 
 # Compare correlations using psych::paired.r()
 paired.r(-.47, -.67, n = 55)
@@ -191,20 +225,41 @@ weather
 flights2 <- flights %>% 
     select(year:day, hour, origin, dest, tailnum, carrier)
 
+planes2 <- 
+    planes %>% rename(plane_year = year)
+
 
 # An inner join matches pairs of observations whenever their keys are equal, and discards all other observations
 # This code keeps only planes that flew in July
 flights2 %>%
     filter(month == 7) %>% 
-    inner_join(planes %>% rename(plane_year = year), by = "tailnum")
+    inner_join(planes2, by = "tailnum")
 
 # A full join keeps all observations in x and y
-# This code keeps all the planes in the dataset, even those that did not fly in July
+# This code adds all the planes in the dataset, even those that did not fly in July
 flights2 %>%
     filter(month == 7) %>% 
-    full_join(planes, by = "tailnum")
+    full_join(planes2, by = "tailnum")
 
-# Left join returns all rows from x, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned. This is a mutating join.
+# Left join keeps all observations in x, and adds columns from y AND observations that match the key from y.
 flights2 %>%
-    select(-origin, -dest) %>% 
     left_join(airlines, by = "carrier")
+
+# Right join keeps all observations in y, and adds columns from x AND observations that match the key from x.
+flights2 %>%
+    right_join(airlines, by = "carrier")
+
+# Task:
+# Which planes with more than 200 seats flew when there was a wind with a speed larger than 40 mph?
+# Get the tail number of these planes
+# SOLUTION: you have to join 3 datasets (weather, flights, planes)
+weather %>% 
+    filter(wind_speed > 40) %>% 
+    inner_join(flights2) %>% 
+    left_join(planes2 %>% filter(seats > 200), by = "tailnum") %>% 
+    distinct(tailnum) %>% 
+    drop_na() %>% 
+    pull()
+
+
+
