@@ -101,7 +101,6 @@ cocktails %>%
     summarise(r = cor(x = abv, y = value) %>% round(2),
               p = cor.test(x = abv, y = value, method = "pearson")$p.value)
 
-
 # To get significance of the values in the matrix, we should use the psych paclage. corr.test() returns correlations, sample size, and p-values. It can also correct the significance for multipe comparisions, and calculate confidence intervals. 
 if (!require(psych)) install.packages("psych")
 library(psych)
@@ -114,6 +113,9 @@ cocktails %>%
     select(abv:sugar) %>% 
     corr.test(adjust = "bonferroni") %>% 
     print(short = FALSE)
+
+# Check normality
+shapiro.test(cocktails$abv)
 
 # psych::cor.ci returns bootstrapped confidence intervals
 cocktails %>% 
@@ -205,6 +207,27 @@ paired.r(-.47, -.67, n = 55)
 # If you provide n2, you can specify the sample size for the variables independently
 paired.r(-.47, -.67, n = 55, n2 = 550)
 
+# Task
+# Log transform the abv variable
+# Check if it is now normally distributed
+# (HINT: you can pull out one variable from your dataset using  df %>% pull(<variable name>)
+#     Correlate the transformed variable to acid in an appropriate way
+#     Write a sentence to summarise the results
+#     Is the resulting correlation significantly different from abv and sugar correlation (-.47)?
+        
+cocktails2 <- 
+cocktails %>% 
+    mutate(abv_log = log(abv))
+
+cocktails2 %>% 
+    pull(abv_log) %>% 
+    shapiro.test()
+
+cor(cocktails2$acid, cocktails2$abv_log)
+paired.r(-.47, -0.6596942, n = 55)
+
+cor.test(cocktails2$acid, cocktails2$abv_log)
+
 ### Joining datasets
 # download and load the nycflights13 package
 install.packages("nycflights13")
@@ -215,6 +238,13 @@ airports
 flights
 planes
 weather
+
+flights %>% 
+    select(flight, carrier)
+
+flights %>% 
+    left_join(airlines, by = "carrier") %>% 
+    select(flight, name)
 
 # flights connects to planes via a single variable, tailnum.
 # flights connects to airlines through the carrier variable.
@@ -227,7 +257,6 @@ flights2 <- flights %>%
 
 planes2 <- 
     planes %>% rename(plane_year = year)
-
 
 # An inner join matches pairs of observations whenever their keys are equal, and discards all other observations
 # This code keeps only planes that flew in July
@@ -260,6 +289,13 @@ weather %>%
     distinct(tailnum) %>% 
     drop_na() %>% 
     pull()
+
+# What is the name of the airlines with the most planes in this set of data?
+weather %>% 
+    filter(wind_speed > 40) %>% 
+    inner_join(flights2) %>% 
+    left_join(planes2 %>% filter(seats > 200), by = "tailnum") %>% 
+    inner_join(airlines, by = "carrier") %>% count(name, sort = TRUE)
 
 
 

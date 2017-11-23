@@ -122,7 +122,7 @@ acid_lm_diag <- augment(acid_lm, cocktails)
 
 # We can single out observations with the clice() function
 cocktails %>% 
-    slice(c(9, 41, 42, 44, 45))
+    slice(c(9, 44, 45))
 
 # We can rerun the lm without cases that have zero acid
 acid_lm_clean <-
@@ -185,7 +185,7 @@ install.packages("stargazer")
 library(stargazer)
 
 
-stargazer(lm1, lm2, title="Results", align=TRUE, type = "text")
+stargazer(lm1, lm2, title = "Results", align=TRUE, type = "text")
 
 results_table_html <-
     stargazer(lm1,
