@@ -37,13 +37,17 @@ cocktails %>%
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) 
 
-# To get clean results, use the broom package.
-# tidy() puts returns the model summary in a neat data frame format
+# The functions from broom package give you the informaion in neat data frames. 
+# tidy() is for the coefficients()
+
+
+# I recommend using the broom functions instead of summary()
+# tidy() returns the coefficients summary in a neat data frame format
 tidy(acid_lm)
-# Augments adds important new columns to your data frames, such as the residuals (.resid), and predicted values corresponding your independent variables. These can be useful for residual diagnostics.
-augment(acid_lm, cocktails)
-# Glimpse returns important model performance metrics.
+# glance() is for the model fit measures
 glance(acid_lm)
+# augment() adds predictions, residuals and residual diagnostic to each data point
+augment(acid_lm, cocktails)
 
 # To get the standardized coefficients (scale free), you need to standardize the output and predictor variables. Use the scale() function on all variables in the model
 acid_lm_std <- lm(scale(abv) ~ scale(acid), data = cocktails)
@@ -141,17 +145,19 @@ cocktails %>%
 ## MULTIPLE REGRESSION
 # Syntax for interactions
 # Add multiple predictors: <outcome variable> ~ <predictor 1> + <predictor 2>
+# You can choose to get a more verbose output using the summary() function.
+
 lm1 <- lm(abv ~ acid + sugar, data = cocktails)
 summary(lm1)
-broom::tidy(lm1)
+tidy(lm1)
 # Add multiple predictors AND their interactions: <outcome variable> ~ <predictor 1> * <predictor 2>
 lm2 <- lm(abv ~ acid * sugar, data = cocktails)
 summary(lm2)
-broom::tidy(lm2)
+tidy(lm2)
 # Add ONLY the interaction of predictors: <outcome variable> ~ <predictor 1> : <predictor 2>
 lm3 <- lm(abv ~ acid : sugar, data = cocktails)
 summary(lm3)
-broom::tidy(lm3)
+tidy(lm3)
 
 # Get the confidence intervals for parameters
 confint(lm1, level = 0.95)
@@ -176,16 +182,19 @@ glance(lm3)
 anova(lm1, lm3)
 # This tells us that the more complicated model is not significantly better, so we should not use it
 
-# You can have more then 2 models, and the comparison refers to the _PREVIOUS_ model (so nomt the baseline)
+# You can have more then 2 models, and the comparison refers to the _PREVIOUS_ model (so not the baseline). Pair-wise comparisons are thus preferable
 anova(lm1, lm2, lm3)
 
 # Based on the comparisons, there is no significant diffference. So we should choose the simplest model, that has the smallest df! It is model number 3!
 
+# To report the results of regression, you have to use a table, according to APA6. To create such a table, the easiest is to use the stargazer package, that collects all information from the models, and creates a nice table.
 install.packages("stargazer")
 library(stargazer)
 
+# To get the table in the console, use the type = "text" argument.
+stargazer(lm1, lm2, title = "Results", align = TRUE, type = "text")
 
-stargazer(lm1, lm2, title = "Results", align=TRUE, type = "text")
+# You can also have the table in different formats, e.g. html. If you do this, you can save the object and view the results using your web browser. We will later learn a way to include those tables to your manuscripts.
 
 results_table_html <-
     stargazer(lm1,
@@ -199,5 +208,6 @@ results_table_html <-
               # keep.summary.stat = c("aic","bic","ll","f","rsq","adj.rsq","n","res.dev","chi2"),
               type = "html")
 
+# You can save the results using the write_lines() function
 write_lines(results_table_html, "results_table.html")
 
