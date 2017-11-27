@@ -37,17 +37,13 @@ cocktails %>%
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) 
 
-# The functions from broom package give you the informaion in neat data frames. 
-# tidy() is for the coefficients()
-
-
-# I recommend using the broom functions instead of summary()
-# tidy() returns the coefficients summary in a neat data frame format
+# To get clean results, use the broom package.
+# tidy() puts returns the model summary in a neat data frame format
 tidy(acid_lm)
-# glance() is for the model fit measures
-glance(acid_lm)
-# augment() adds predictions, residuals and residual diagnostic to each data point
+# Augments adds important new columns to your data frames, such as the residuals (.resid), and predicted values corresponding your independent variables. These can be useful for residual diagnostics.
 augment(acid_lm, cocktails)
+# Glimpse returns important model performance metrics.
+glance(acid_lm)
 
 # To get the standardized coefficients (scale free), you need to standardize the output and predictor variables. Use the scale() function on all variables in the model
 acid_lm_std <- lm(scale(abv) ~ scale(acid), data = cocktails)
@@ -56,7 +52,7 @@ summary(acid_lm_std)
 cor(cocktails$abv, cocktails$acid)
 
 ## Predicting values based on the model
-# Create data with new values to predict
+# Create data with new 
 newdata <- tibble(acid = c(0.2, 0.3, 0.4))
 # predict returns a vector of predictions
 predict(acid_lm, newdata)
@@ -95,11 +91,30 @@ cocktails %>%
     ggplot() +
     aes(y = abv, x = acid) +
     geom_hline(aes(yintercept = mean_abv), size = 1.5) +
-    geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "yellow") +
+    geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "black") +
     geom_segment(aes(xend = acid, yend = mean_abv, y = .fitted), linetype = "dashed", color = "purple", size = 1.2) +
     geom_point(size = 2)
 
-## Diagnostics
+
+
+## Checking the assumptions for linear regression
+# Measure multicollinearity using the variance inflaction factor (VIF)
+# Values for any varible should not be larger than 10
+car::vif(lm2)
+
+# If the average VIF is larger than 1, it means that multicollineratity is biasing our model
+mean(car::vif(lm2))
+
+# We can also look at the tolerance, that is the reciprocal of VIF, where we are looking for values closer to one (tolerance has the adventage of being between 0 and 1). Values below .1 indicate serious problems, while values below .2 are somewhat troublesome
+1/car::vif(lm2)
+
+# Measuring the independence of residuals
+car::dwt(lm2)
+# It seems like model has some significant autocorrelation, so the residuals are not independent
+
+# To check heteroscetasticity inspect the residual diagnostic plots
+
+## Residual diagnostics
 # The residuals should not have an underlying pattern: they should have a normal distribution
 cocktails %>% 
     augment(lm(abv ~ acid, data = .), .) %>% 
@@ -126,7 +141,7 @@ acid_lm_diag <- augment(acid_lm, cocktails)
 
 # We can single out observations with the clice() function
 cocktails %>% 
-    slice(c(9, 44, 45))
+    slice(c(9, 41, 42, 44, 45))
 
 # We can rerun the lm without cases that have zero acid
 acid_lm_clean <-
@@ -134,13 +149,15 @@ acid_lm_clean <-
     filter(acid != 0) %>% 
     lm(abv ~ acid, data = .)
 summary(acid_lm_clean)
-
-# Check diagnostics again
+# We can check the diagnostics without the influential cases.
+# Remember, that you can only remove cases from the dataset, when you are perfectly sure that the data was not recorded correctly. You cannot simlply remove outliers becauses they don't fit your model.
 autoplot(acid_lm_clean, which = 1:6)
 # We can see that the residuals are still not perfect, which makes the reliability of the model shaky
-# Dealing with diagnostics is often an iterative process, where problematic values are investigated recursive
-cocktails %>% 
-    augment(lm(abv ~ acid, data = .), .)
+# Dealing with diagnostics is often an iterative process, where problematic values are investigated recursively
+
+# We can also check the dfbeta and DFFit values to see how much the model changes when we remove a case
+dfbeta(acid_lm) # Change in model parameters
+dffits(acid_lm) # Change in residual
 
 ## MULTIPLE REGRESSION
 # Syntax for interactions
@@ -163,10 +180,11 @@ tidy(lm3)
 confint(lm1, level = 0.95)
 # You can combine these
 # R can also deal with categorical variables, as they are automatically dummied, and the first level is taken as baseline
-lm(abv ~ acid : sugar + type, data = cocktails) %>% summary()
+lm_cat <- lm(abv ~ acid : sugar + type, data = cocktails)
 # To change the baseline, convert it to random, and use the levels to set the baseline to carbonated
 # Use the forcats::fct_relevel() function
-lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails) %>% summary()
+lm4 <- lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails)
+tidy(lm4)
 
 ## Model selection
 # You can compare models if you use the same data, and the same approach to get the regression line
@@ -177,6 +195,7 @@ lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails) %>% s
 glance(lm1)
 glance(lm2)
 glance(lm3)
+glance(lm4)
 
 # You can also compare the logLik models using the anova() function. It returns an F value, which is significant if difference.
 anova(lm1, lm3)
@@ -196,18 +215,33 @@ stargazer(lm1, lm2, title = "Results", align = TRUE, type = "text")
 
 # You can also have the table in different formats, e.g. html. If you do this, you can save the object and view the results using your web browser. We will later learn a way to include those tables to your manuscripts.
 
+# Let's also add standardized coefficients
+# We need to transform the non-standardized values using the lm.beta package
+install.packages("lm.beta")
+library(lm.beta)
+# Create standardized versions from all objects
+lm1_std <- lm.beta(lm1)
+lm2_std <- lm.beta(lm2)
+lm3_std <- lm.beta(lm3)
+lm4_std <- lm.beta(lm4)
+
+# We have to explicitly tell stargazer which coefficients we want to see
 results_table_html <-
-    stargazer(lm1,
-              lm2,
-              lm3,
+    stargazer(lm1_std,
+              lm2_std,
+              lm3_std,
+              lm4_std,
+              coef = list(lm1_std$standardized.coefficients,
+                          lm2_std$standardized.coefficients,
+                          lm3_std$standardized.coefficients,
+                          lm4_std$standardized.coefficients),
               title = "Model comparison",
               dep.var.labels = "Alcohol content",
               align = TRUE,
               ci = TRUE,
               df = TRUE,
-              # keep.summary.stat = c("aic","bic","ll","f","rsq","adj.rsq","n","res.dev","chi2"),
+              digits = 2,
               type = "html")
 
-# You can save the results using the write_lines() function
+# You can save the results using the write_lines() function, and open the html in the browser
 write_lines(results_table_html, "results_table.html")
-
