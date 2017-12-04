@@ -1,8 +1,5 @@
-# Lecture 9-10
+# Lecture 9-10: Writing functions, using purrr, style guide
 library(tidyverse)
-
-# Writing functions
-
 # Loops vs. vectorised functions
 
 # Let's make a data frame
@@ -20,11 +17,10 @@ sd(df$z)
 # 1. Make an empty variable that can contain the results later
 output <- NULL 
 # Now create a loop, and define the sequence that it has to iterate through using the index variable (i)
+
 for (i in seq_along(df)) {
-    # Save the values to the output variable using the index variable 
     output[i] <- sd(df[[i]])
 }
-# Check the results
 output
 
 # We can do the same in one line, using the purrr::map() function
@@ -130,5 +126,6 @@ map_dbl(list(1, 10, "a"), ~poss_sqrt(.x))
 map(list(1, -1), quietly(log))
 
 map(list("foo", "bar"), quietly(print))
+
 
 
