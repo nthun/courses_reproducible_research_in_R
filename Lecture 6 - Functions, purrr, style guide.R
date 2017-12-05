@@ -1,4 +1,4 @@
-# Lecture 9-10: Writing functions, using purrr, style guide
+# Lecture 6: Writing functions, using purrr, style guide
 library(tidyverse)
 # Loops vs. vectorised functions
 
@@ -18,6 +18,7 @@ sd(df$z)
 output <- NULL 
 # Now create a loop, and define the sequence that it has to iterate through using the index variable (i)
 
+output <- c()
 for (i in seq_along(df)) {
     output[i] <- sd(df[[i]])
 }
@@ -35,7 +36,6 @@ map_dbl(df, ~sd(.x))
 
 # map_lgl() makes a logical vector.
 # map_int() makes an integer vector.
-# map_dbl() makes a double vector.
 # map_chr() makes a character vector.
 # These are strict functions, they don't allow different data formats into the vector, so this will fail:
 map_int(df, ~ sd(.x))
@@ -50,21 +50,18 @@ files
 
 # Let's do the same with map()
 files <- map(list.files(), ~read_file(.x))
-files %>% compact()
-
-# Shortcuts:
-
 
 # Let's run some linear regression models on data subsets
 mtcars %>%
     group_by(cyl) %>%
     nest() %>% # Put the data groups in separate nested dataframes withint the dataframe
-    mutate(r_squared = map_dbl(data,
-            ~ lm(mpg ~ disp, data = .x) %>% # Use linear regression on all nested data frames separately
+    mutate(r_squared = map(data,
+            ~ lm(mpg ~ disp, data = .x) %>%
             broom::glance() %>% # Tidy up model performance statistics
             pull(r.squared) # Get r squared values separately for each nested data frame
     )) 
 
+# Shortcuts:
 # For nested lists, you can also provide an element name and that element will be pulled  from all sublists
 abc <- list(c(a = letters[1], b = letters[10], b = letters[20]))
 map_chr(abc, "b")
@@ -99,7 +96,8 @@ walk2(cyl_plots$plot, cyl_plots$file_name, ~ggsave(.x, file = .y))
 
 # pmap()
 # Generate random numbers with different number of numbers, mean, and sd
-pmap(list(c(10, 20, 30), c(1,2,3), c(.1,.2,.3)), ~ rnorm(..1, ..2, ..3))
+ls <- list(c(10, 20, 30), c(1,2,3), c(.1,.2,.3))
+pmap(ls, ~ rnorm(..1, ..2, ..3))
 
 # Dealing with failure
 # safely() modifies the original function to provide an error and a result
@@ -120,12 +118,24 @@ out %>% transpose()
 poss_sqrt <- possibly(sqrt, otherwise = NA_real_)
 
 # So this return NA instead of failing when getting "a"
-map_dbl(list(1, 10, "a"), ~poss_sqrt(.x))
+map_dbl(list(1, 10, "a",100), ~poss_sqrt(.x))
 
 # quietly() is similar to safely() but instead of errors, it returns a list of result, printed output, warnings, and messages
 map(list(1, -1), quietly(log))
 
 map(list("foo", "bar"), quietly(print))
 
+
+mean_rm <- function(x, ...){
+    mean(x, ...)
+}
+x <- c(1:10, NA_integer_)
+mean_rm(x, na.rm = T)    
+    
+abc <- letters[1:20]
+str_concat <- function(..., sep = "_"){
+    paste(..., collapse = sep)
+}
+str_concat(abc)
 
 
