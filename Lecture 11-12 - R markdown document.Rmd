@@ -1,0 +1,65 @@
+---
+title: "Lecture 11-12 - R markdown"
+author: "Tamas Nagy"
+date: "December 7, 2017"
+output: html_document
+---
+# How to write an R markdown document
+
+In an R markdown document, you can have a normal text (written using markdown), code blocks, output blocks, embedded pictures (even animgifs ;). 
+
+Use standard r markdown notation:
+
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+
+
+You can draw a horizontal separator like this:
+
+-------------------
+
+When you want to put things in separate lines, use double enter (one empty line) between items
+
+Bold: *italic*
+
+Italic: **bold**
+
+Strike-through: ~~strike-through~~ 
+
+Use bullet points:
+
+* like this
+* or this
+* or his
+- or this (* and - are interchangeable as bullet points)
+
+Or numbering:
+
+1. First
+2. Second
+3. Third
+    a. can
+    b. have
+    c. hierarchies
+    
+
+-------------------------------
+There are some useful keyboard shortcuts:
+
+* Ctrl/Cmd + Shift + K Saves your document and compiles it to html (or pdf or docx, depending on your setting)
+* F7 performs a spell check on the text (not the code)
+* If you just want to run a code chunk, use Ctrl/Cmd + Enter
+
+```{r setup, include=FALSE}
+library(tidyverse)
+if (!require(babynames)) install.packages("babynames")
+library(babynames)
+```
+
+```{r}
+babynames
+```
+
