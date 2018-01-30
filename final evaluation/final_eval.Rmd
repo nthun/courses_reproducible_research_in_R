@@ -1,0 +1,245 @@
+---
+title: "Evaluating the performance of students for 'Programming in R for reproducible research'"
+output: 
+    html_notebook:
+        theme: sandstone
+---
+
+# Executive summary
+I want to give you a final gift, so I put together a litte analysis of the performance of the group.
+In this notebook, I will show how you performed during the course, and what kind of feedback you received from me. Don't worry, no one is singled out in the analysis, and identities are kept in confidence.
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(googlesheets)
+library(ggridges)
+library(scales)
+library(tidytext)
+library(wordcloud2)
+devtools::install_github("hadley/emo")
+library(emo)
+```
+
+I'm downloading the data directly from google sheets. To protect personal rights, the data is not public `r emo::ji("secret")`.
+
+```{r message=FALSE, warning=FALSE}
+# Read the files directly from google sheets and add the number of the evaluation (as character)
+eval1 <-
+    gs_title("assignment1_evaluations", verbose = FALSE) %>% 
+    gs_read(1, verbose = FALSE) %>% 
+    mutate(assignment = "1")
+eval2 <-
+    gs_title("assignment2_evaluations", verbose = FALSE) %>% 
+    gs_read(1, verbose = FALSE) %>% 
+    mutate(assignment = "2")
+eval3 <-
+    gs_title("assignment3_evaluations", verbose = FALSE) %>% 
+    gs_read(1, verbose = FALSE) %>% 
+    mutate(assignment = "3")
+
+# Bind the three evaluations together
+evaluations <- 
+    bind_rows(eval1, eval2, eval3) %>% 
+    mutate( assignment = as.factor(assignment),
+            submitted = if_else(points != 0, TRUE, FALSE),
+            rel_points = points/max_points)
+```
+
+# Sorry, I can't give you the data! `r emo::ji("sad")`
+
+<center> ![](https://media.giphy.com/media/tLGBynLboUTLy/giphy.gif) </center>
+
+# Percentage of submitted assignments
+First, let's see how many of you were busy bees and submitted assignments. It looks like most of you who submitted an assignment kept this good habit by the end of the class.
+
+```{r fig.align="center", fig.width=10}
+evaluations %>%
+    ggplot() +
+    aes(x = assignment, fill = submitted) +
+    geom_bar(position = "fill") +
+    scale_y_continuous(labels = percent_format()) +
+    theme_minimal() +
+    labs(
+        fill = "Submitted",
+        y = NULL,
+        x = "Number of assignment",
+        title = "Percentage of submitted assignments",
+        subtitle = "The number of unsubmitted assignment did not really change over time"
+    )
+```
+
+# Points for the assignments
+
+The distibution is bimodal, because those who did not submit a particular assignmen received zero points. Otherwise, the distributions seem rather normal. There is a small difference between assignments.
+(I admit that this is not the best presentation of the data, as it suggests that there are points below 0% and points above 100%, but it looks so nice!)
+
+```{r message=FALSE, warning=FALSE, fig.align="center", fig.width=10}
+evaluations %>%
+    ggplot() +
+    aes(x = rel_points, y = assignment, fill = assignment) +
+    geom_density_ridges2(alpha = .8) +
+    scale_x_continuous(labels = percent_format()) +
+    theme_minimal() +
+    labs(
+        y = NULL,
+        x = NULL,
+        title = "Distribution of the relative performance for each assignment",
+        subtitle = "It seems like you did the best job for the last assignment (also you had more time)"
+    )
+```
+
+## Learning trajectories for each student
+I calculated whether students' performance improved, deteriorated, or remained similar over time using a linear regression slope. I plot this info as color in the plot, where the relative performance is also shown.
+
+```{r fig.align="center", fig.width=10, warning=FALSE}
+# Calculate regression for each student, to find if the performance was increasing, decreasing, or stable
+trajectory <- 
+    evaluations %>% 
+    group_by(email) %>% 
+    do(slope = lm(rel_points ~ as.numeric(assignment), data = .)$coef[2]) %>% 
+    unnest() %>% 
+    mutate(performance = case_when(slope < -.05 ~ "Decreasing",
+                                   slope > .05 ~ "Increasing",
+                                   TRUE ~ "Stable") %>% as.factor())
+
+set.seed(42) # I will put 3% of random noise to the data, so lines can be seen separately
+evaluations %>%
+    left_join(trajectory, by = "email") %>% 
+    ggplot() +
+    aes(x = assignment, y = rel_points, group = email, color = performance, alpha = I(.6)) +
+    geom_line(
+        arrow = arrow(type = "open"),
+        linejoin = "round",
+        size = 2,
+        position = position_jitter(width = 0, height = .03)) +
+    scale_y_continuous(labels = percent_format()) +
+    theme_minimal() +
+    labs(y = NULL, 
+         title = "Trajectories of student performances across three assignments",
+         subtitle = "(Mind the 3% vertical noise in the data so arrows don't overlap)")
+
+```
+
+<center>![](https://media.giphy.com/media/rdwAD32Yng16o/giphy.gif)</center>
+
+## Final points
+
+Here is the distibution of final points. 100 was the max, and everyone got an extra 20 points for participation, because I'm kind (actually, that's because I was lazy to set explicit rules, and did not document participation).
+
+<center> ![](https://media.giphy.com/media/3o85xwxr06YNoFdSbm/giphy.gif) </center>
+
+```{r fig.align="center", fig.height=6}
+# Summarised points (+20 for participation) --------------------------------
+evaluations %>% 
+    # filter(points > 0) %>% 
+    group_by(email) %>% 
+    summarise(sum_points = sum(points, na.rm = TRUE) + 20) %>% 
+    ggplot() +
+        aes(x = sum_points) +
+        geom_density(fill = "blue", alpha = .5) +
+    theme_minimal()
+```
+
+# Comment mining
+I have also given you feedback on all assignments. Let's see how many comments there are!
+
+```{r}
+# Prepare the comments for visualizations
+comments <- 
+    evaluations %>% 
+    filter(points != 0) %>% 
+    group_by(assignment, email) %>% 
+    summarise(text = paste(`comment on outputs`, `comment on code`, `comment on report`, collapse =" ")) %>% 
+    unnest_tokens(word, text) %>% 
+    filter(word != "na") %>% 
+    ungroup()
+```
+
+To protect personality rights, I remove most of the email address.
+
+```{r fig.align="center", fig.height=8}
+comments %>% 
+    group_by(assignment, email) %>% 
+    count() %>% 
+    ungroup() %>% 
+    mutate(email = paste0(str_sub(email, 0,3),"...@...", str_sub(email, -2,-1))) %>% 
+        ggplot() +
+            aes(y = n, fill = fct_rev(assignment), x = fct_rev(email), label = n) +
+            geom_col(alpha = .9) + 
+            geom_label(position = "stack") +
+            coord_flip() +
+            theme_minimal() +
+            labs(x = NULL, y = "Number of words in the feedback for each assignment", 
+                 title = "Number of words in the feedback by assignment",
+                 subtitle = "Only for those who submitted an assignment",
+                 fill = "Assignment")
+
+```
+
+
+# Here is a fancy wordcloud from my comments
+What are the most frequent words that I used in the feedbacks? 
+
+```{r fig.align= "center", fig.width=10}
+# Fancy wordcloud
+comments %>% 
+    anti_join(stop_words, by = "word") %>% 
+    count(word, sort = TRUE) %>% 
+    wordcloud2()
+```
+
+
+
+# Jesus, I'm boring!!!
+
+<center>![](https://media.giphy.com/media/5gUnOrltPvZzW/giphy.gif)</center>
+
+# But am I at least kind?
+
+It seems like. I've given surprisingly few negative comments `r emo::ji("angel")`
+
+```{r fig.align= "center", fig.width=10}
+# Using proportion of answers with a particular sentiment
+comments %>% 
+    anti_join(stop_words, by = "word") %>% 
+    left_join(get_sentiments("nrc"), by = "word") %>% 
+    group_by(assignment) %>% 
+    mutate(all_comment = n()) %>% 
+    group_by(assignment, sentiment) %>% 
+    summarise(n = n(),
+              perc = n()/first(all_comment)) %>% 
+    drop_na(sentiment) %>% 
+    ggplot() +
+        aes(x = sentiment, y = perc, fill = sentiment, label = perc %>% round(2) %>% percent()) +
+        guides(fill = FALSE) +
+        geom_col() +
+        geom_label(position = "stack") +
+        theme_minimal() +
+        facet_wrap(~assignment, labeller = label_both) +
+        scale_y_continuous(labels = percent_format()) +
+        coord_flip() +
+        labs(x = NULL, y = NULL, 
+             title = "The proportion of words associated with a specific emotion")
+```
+
+
+# Don't go just yet! Please fill the minimalist [feedback questionnaire](https://docs.google.com/forms/d/e/1FAIpQLSc3gqiHIBnBe_pULKAAegDFHNipXtsN2IESQyf2VRAqVvBLpQ/viewform?usp=sf_link) until 5th of February!!!!
+
+Now, go out to the word and spread the word about #Rstats!
+
+Also, you can fast your eyes on the beautiful assignments that the others made:
+
+```{r message=FALSE, warning=FALSE}
+git_data <- 
+    gs_title('Final assignment for "R programming for reproducible research"  (Responses)', verbose = FALSE) %>% 
+    gs_read(1, verbose = FALSE)
+
+git_data %>% 
+    select(html)
+```
+
+
+<center> ![](https://media.giphy.com/media/upg0i1m4DLe5q/giphy.gif) </center>
+
+
