@@ -228,7 +228,7 @@ comments %>%
 
 Now, go out to the word and spread the word about #Rstats!
 
-Also, you can fast your eyes on the beautiful assignments that the others made:
+##Also, you can fast your eyes on the beautiful assignments that the others made:
 
 ```{r message=FALSE, warning=FALSE}
 git_data <- 
