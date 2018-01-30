@@ -1,8 +1,8 @@
 ---
 title: "Evaluating the performance of students for 'Programming in R for reproducible research'"
 output: 
-    html_notebook:
-        theme: sandstone
+    html_notebook
+        # theme: sandstone
 ---
 
 # Executive summary
